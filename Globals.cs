@@ -12,6 +12,7 @@
         public static readonly string siteId = GetEnvironmentString("siteId");
         public static readonly string listId = GetEnvironmentString("listId");
         public static readonly string containerName = GetEnvironmentString("containerName");
+        public static readonly string deleteFunctionUrl = GetEnvironmentString("deleteFunctionUrl");
 
         private static string GetEnvironmentString(string name)
         {
