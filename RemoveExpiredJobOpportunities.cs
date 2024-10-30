@@ -22,33 +22,36 @@ namespace appsvc_function_dev_cm_sche_dotnet001
 
             var blobServiceClient = new BlobServiceClient(Globals.azureWebJobsStorage);
             var graphClient = new GraphServiceClient(new ROPCConfidentialTokenCredential(_logger));
-            var response = await graphClient.Sites[Globals.siteId].Lists[Globals.listId].Items.GetAsync();
+
+            var response = await graphClient
+            .Sites[Globals.siteId]
+            .Lists[Globals.listId]
+            .Items
+            .GetAsync(requestConfiguration =>
+            {
+                requestConfiguration.QueryParameters.Expand = ["fields"];
+            });
+
             var jobOpportunityListItems = response.Value;
 
             foreach (var item in jobOpportunityListItems)
             {
-                var jobOpListItem = await graphClient
-                .Sites[Globals.siteId]
-                .Lists[Globals.listId]
-                .Items[item.Id]
-                .GetAsync(requestConfiguration =>
+                if (item.Fields.AdditionalData.TryGetValue("ApplicationDeadlineDate", out var deadlineDateObj) && deadlineDateObj is DateTime deadlineDate)
                 {
-                    requestConfiguration.QueryParameters.Expand = ["fields"];
-                });
+                    if (deadlineDate < DateTime.Now)
+                    {
+                        await graphClient
+                        .Sites[Globals.siteId]
+                        .Lists[Globals.listId]
+                        .Items[item.Id]
+                        .DeleteAsync();
 
-                if (jobOpListItem != null)
+                        _logger.LogInformation($"Deleted expired JobOpportunity with ListItemId: {item.Id}");
+                    }
+                }
+                else
                 {
-                    if (jobOpListItem.Fields.AdditionalData.TryGetValue("ApplicationDeadlineDate", out var deadlineDateObj) && deadlineDateObj is DateTime deadlineDate)
-                    {
-                        if (deadlineDate < DateTime.Now)
-                        {
-                            // Delete from list.
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"ListItemId: {jobOpListItem.Id} - The 'ApplicationDeadlineDate' field was not found or is not a valid date.");
-                    }
+                    _logger.LogWarning($"ListItemId: {item.Id} - The 'ApplicationDeadlineDate' field was not found or is not a valid date.");
                 }
             }
 

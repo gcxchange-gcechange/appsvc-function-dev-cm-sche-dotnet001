@@ -1,10 +1,6 @@
 ﻿using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph;
-using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace appsvc_function_dev_cm_sche_dotnet001
@@ -19,7 +15,7 @@ namespace appsvc_function_dev_cm_sche_dotnet001
         }
 
         [Function("DeleteBackups")]
-        public async Task RunAsync([TimerTrigger("0 0 0 * * *")] TimerInfo myTimer)
+        public async Task RunAsync([TimerTrigger("0 0 0 1 1,7 *")] TimerInfo myTimer)
         {
             _logger.LogInformation($"DeleteBackups function executed at: {DateTime.Now}");
 
@@ -35,10 +31,10 @@ namespace appsvc_function_dev_cm_sche_dotnet001
 
                 if (match.Success)
                 {
-                    int year = int.Parse(match.Groups[1].Value);
-                    int month = int.Parse(match.Groups[2].Value);
-                    int day = int.Parse(match.Groups[3].Value);
-                    DateTime blobDate = new DateTime(year, month, day);
+                    var year = int.Parse(match.Groups[1].Value);
+                    var month = int.Parse(match.Groups[2].Value);
+                    var day = int.Parse(match.Groups[3].Value);
+                    var blobDate = new DateTime(year, month, day);
 
                     if (blobDate < thresholdDate)
                     {
