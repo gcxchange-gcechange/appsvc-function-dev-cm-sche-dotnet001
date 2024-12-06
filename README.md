@@ -31,14 +31,13 @@ n/a
 | -------------------------- | ------------------------------------------------------------------------------ |
 | AzureWebJobsStorage        | Connection string for the storage acoount                                      |
 | containerName              | The name of the storage container that contains the backup files               |
-| delegateEmail              | 
-| deleteFunctionUrl          |
-| keyVaultUrl                |
-| listId                     |
-| secretNameClient           |
-| secretNameDelegatePassword |
-| secretNameDelegatePassword |
-| tenantId                   |
+| delegateEmail              | Account name used for delegated access                                         |
+| deleteFunctionUrl          | API call for the delete functionality                                          |
+| keyVaultUrl                | Key vault address                                                              |
+| listId                     | ID of the job opportunity SharePoint list                                      |
+| secretNameClient           | Secret name used for client authorization                                      |
+| secretNameDelegatePassword | Secret name used for the delegated account password                            |
+| tenantId                   | ID of the tenant that hosts the function app                                   |
 
 ## Version history
 
