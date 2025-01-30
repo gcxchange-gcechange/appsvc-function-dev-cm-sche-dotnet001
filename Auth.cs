@@ -31,19 +31,22 @@ namespace appsvc_function_dev_cm_sche_dotnet001
                 }
             };
 
-            var client = new SecretClient(new System.Uri(Globals.keyVaultUrl), new DefaultAzureCredential(), options);
-            KeyVaultSecret secret_client = client.GetSecret(Globals.secretNameClient);
-            var clientSecret = secret_client.Value;
-            KeyVaultSecret secret_password = client.GetSecret(Globals.secretNameDelegatePassword);
-            var password = secret_password.Value;
+            try
+            {
+                var client = new SecretClient(new System.Uri(Globals.keyVaultUrl), new DefaultAzureCredential(), options);
+                KeyVaultSecret secret_client = client.GetSecret(Globals.secretNameClient);
+                _clientSecret = secret_client.Value;
+                KeyVaultSecret secret_password = client.GetSecret(Globals.secretNameDelegatePassword);
+                _password = secret_password.Value;
+            }
+            catch (Exception ex) 
+            {
+                log.LogError($"Error getting client secret and password: {ex.Message} - {ex.InnerException}");
+            }
 
-            // Public Constructor
             _username = Globals.delegateEmail;
-            _password = password;
             _tenantId = Globals.tenantId;
             _clientId = Globals.clientId;
-            _clientSecret = clientSecret;
-
             _tokenEndpoint = "https://login.microsoftonline.com/" + _tenantId + "/oauth2/v2.0/token";
         }
 

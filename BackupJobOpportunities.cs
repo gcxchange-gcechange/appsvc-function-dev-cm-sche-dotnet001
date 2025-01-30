@@ -18,7 +18,7 @@ namespace appsvc_function_dev_cm_sche_dotnet001
         }
 
         [Function("BackupJobOpportunities")]
-        public async Task RunAsync([TimerTrigger("0 0 0 * * *")] TimerInfo myTimer)
+        public async Task RunAsync([TimerTrigger("0 0 5 * * *")] TimerInfo myTimer)
         {
             _logger.LogInformation($"BackupJobOpportunities function executed at: {DateTime.Now}");
 

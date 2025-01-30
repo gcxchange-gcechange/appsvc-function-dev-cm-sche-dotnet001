@@ -2,7 +2,6 @@ using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
-using CareerMarketplace;
 using System.Text;
 using System.Text.Json;
 
@@ -41,7 +40,7 @@ namespace appsvc_function_dev_cm_sche_dotnet001
             {
                 if (item.Fields.AdditionalData.TryGetValue("ApplicationDeadlineDate", out var deadlineDateObj) && deadlineDateObj is DateTime deadlineDate)
                 {
-                    if (deadlineDate < DateTime.Now)
+                    if (deadlineDate.ToUniversalTime() < DateTime.UtcNow.AddMonths(-1))
                         itemIds.Add(item.Id);
                 }
                 else
@@ -61,11 +60,9 @@ namespace appsvc_function_dev_cm_sche_dotnet001
                 var responseContent = await httpClient.PostAsync(Globals.deleteFunctionUrl, content);
 
                 if (responseContent.IsSuccessStatusCode)
-                {
                     _logger.LogInformation($"Successfully deleted {itemIds.Count} expired job opportunities.");
-                }
                 else
-                    _logger.LogError($"Somethign went wrong: {responseContent.StatusCode} - {responseContent.Content}");
+                    _logger.LogError($"Something went wrong: {responseContent.StatusCode} - {responseContent.Content}");
             }
 
             _logger.LogInformation("RemoveExpiredJobOpportunities complete.");

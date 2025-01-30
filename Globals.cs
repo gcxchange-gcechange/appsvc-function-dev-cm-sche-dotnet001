@@ -16,7 +16,12 @@
 
         private static string GetEnvironmentString(string name)
         {
-            return Environment.GetEnvironmentVariable(name, EnvironmentVariableTarget.Process);
+            var value = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrEmpty(value))
+            {
+                Console.WriteLine($"Warning: Environment variable '{name}' is not set.");
+            }
+            return value;
         }
     }
 }
