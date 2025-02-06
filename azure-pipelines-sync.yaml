@@ -5,7 +5,7 @@ resources:
   repositories:
   - repository: 'appsvc-function-dev-cm-sche-dotnet001'
     type: git
-    name: 'GCExchange/repo name'
+    name: 'GCExchange/appsvc-function-dev-cm-sche-dotnet001'
 pool: TBS Linux Self Hosted
 jobs:
   - job: sync
