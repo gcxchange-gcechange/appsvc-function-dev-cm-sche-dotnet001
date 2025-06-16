@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace appsvc_function_dev_cm_sche_dotnet001
 {
@@ -35,24 +36,55 @@ namespace appsvc_function_dev_cm_sche_dotnet001
                 requestConfiguration.QueryParameters.Expand = ["fields"];
             });
 
-            var jobOpportunityListItems = response.Value;
 
-            foreach (var listItem in jobOpportunityListItems)
+            if (response != null && response.Value != null)
             {
-                backup.JobOpportunities.Add(JsonSerializer.Serialize(listItem.Fields.AdditionalData));
-            }
+                var jobOpportunityListItems = response.Value;
 
-            if (backup.JobOpportunities.Any())
-            {
-                var byteArray = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(backup));
-                using var stream = new MemoryStream(byteArray);
+                foreach (var listItem in jobOpportunityListItems)
+                {
+                    if (listItem.Fields != null)
+                    {
+                        // unescape unicode characters
+                        var json = Regex.Unescape(JsonSerializer.Serialize(listItem.Fields.AdditionalData));
+                        // replace double quotation marks with single quotation marks
+                        json = json.Replace("\"\"", "\"");
+                        // escape single quotation marks
+                        json = json.Replace("\"", "\\\"");
 
-                string blobName = $"{backup.CreateDate.ToString("yyyy-MM-dd")}-jobOpportunities.json";
-                BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(Globals.containerName);
+                        backup.JobOpportunities.Add(json);
+                    }
+                }
 
-                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
-                var blobClient = containerClient.GetBlobClient(blobName);
-                await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = "application/json" });
+                if (backup.JobOpportunities.Count > 0)
+                {
+                    // indent the json file to make it easier to read
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    };
+                    // unescape unicode characters
+                    var json = Regex.Unescape(JsonSerializer.Serialize(backup, options));
+
+                    try
+                    {
+                        var byteArray = Encoding.UTF8.GetBytes(json);
+                        string blobName = $"{backup.CreateDate.ToString("yyyy-MM-dd")}-jobOpportunities.json";
+
+                        BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(Globals.containerName);
+                        await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+                        var blobClient = containerClient.GetBlobClient(blobName);
+
+                        using var stream = new MemoryStream(byteArray);
+                        await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = "application/json" });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Error saving blob file!");
+                        _logger.LogError($"{ex.Message}");
+                        _logger.LogError($"{ex.StackTrace}");
+                    }
+                }
             }
 
             _logger.LogInformation($"Backed up {backup.JobOpportunities.Count} jobs.{Environment.NewLine}Backup complete!");

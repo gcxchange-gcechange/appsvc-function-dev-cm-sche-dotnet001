@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
@@ -33,39 +34,60 @@ namespace appsvc_function_dev_cm_sche_dotnet001
                 requestConfiguration.QueryParameters.Expand = ["fields"];
             });
 
-            var jobOpportunityListItems = response.Value;
-            var itemIds = new List<string>();
-
-            foreach (var item in jobOpportunityListItems)
+            if (response != null && response.Value != null)
             {
-                if (item.Fields.AdditionalData.TryGetValue("ApplicationDeadlineDate", out var deadlineDateObj) && deadlineDateObj is DateTime deadlineDate)
+                var jobOpportunityListItems = response.Value;
+                var ids = new List<string>();
+
+                foreach (var item in jobOpportunityListItems)
                 {
-                    if (deadlineDate.ToUniversalTime() < DateTime.UtcNow.AddMonths(-1))
-                        itemIds.Add(item.Id);
+                    if (item.Fields.AdditionalData.TryGetValue("ApplicationDeadlineDate", out var deadlineDateObj) && deadlineDateObj is DateTime deadlineDate)
+                    {
+                        if (deadlineDate.ToUniversalTime() < DateTime.UtcNow.AddMonths(-6))
+                            ids.Add(item.Id);
+                    }
+                    else
+                        _logger.LogWarning($"ListItemId: {item.Id} - The 'ApplicationDeadlineDate' field was not found or is not a valid date.");
                 }
-                else
-                    _logger.LogWarning($"ListItemId: {item.Id} - The 'ApplicationDeadlineDate' field was not found or is not a valid date.");
-            }
 
-            if (itemIds.Any())
-            {
-                var data = new
+                if (ids.Any())
                 {
-                    ItemId = string.Join(",", itemIds)
-                };
-
-                var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
-
-                var httpClient = new HttpClient();
-                var responseContent = await httpClient.PostAsync(Globals.deleteFunctionUrl, content);
-
-                if (responseContent.IsSuccessStatusCode)
-                    _logger.LogInformation($"Successfully deleted {itemIds.Count} expired job opportunities.");
-                else
-                    _logger.LogError($"Something went wrong: {responseContent.StatusCode} - {responseContent.Content}");
+                    foreach (var id in ids)
+                    {
+                        await SendMessageAsync(new DeleteMessage(id), _logger);
+                    }
+                }
             }
+            else
+            {
+                _logger.LogError("Couldn't process request, enexpected response.");
+            }
+
+            
 
             _logger.LogInformation("RemoveExpiredJobOpportunities complete.");
+        }
+
+        private async Task SendMessageAsync(DeleteMessage payload, ILogger _logger)
+        {
+            var client = new QueueClient(Globals.azureWebJobsStorage, "delete");
+            await client.CreateIfNotExistsAsync();
+
+            if (client.Exists())
+            {
+                string message = JsonSerializer.Serialize(payload);
+                await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(message)));
+                _logger.LogInformation($"Sent to delete queue: {message}");
+            }
+        }
+
+        internal class DeleteMessage
+        {
+            public DeleteMessage(string ids)
+            {
+                this.Ids = ids;
+            }
+            public string Ids { get; set; }
         }
     }
 }
