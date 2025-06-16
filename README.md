@@ -6,7 +6,7 @@ Scheduler function app for Career Marketplace on GCXChange.
 
 ## Prerequisites
 
-n/a
+You need to add a queue named `delete` to the storage account in the resource group.
 
 ## Version 
 
