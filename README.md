@@ -10,7 +10,7 @@ You need to add a queue named `delete` to the storage account in the resource gr
 
 ## Version 
 
-![dotnet 8](https://img.shields.io/badge/net8.0-blue.svg)
+![dotnet 10](https://img.shields.io/badge/net10.0-blue.svg)
 
 ## API permission
 
